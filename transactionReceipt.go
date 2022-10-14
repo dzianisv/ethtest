@@ -63,7 +63,7 @@ func main() {
 	log.Printf("Using %s\n", url)
 
 	c := make(chan Response)
-	request_n := 50000
+	request_n := 100000
 	count := request_n
 	concurrency := 100
 	active_n := 0
