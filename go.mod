@@ -1,4 +1,4 @@
-module gethtest
+module ethtest
 
 go 1.19
 

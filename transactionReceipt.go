@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 )
@@ -17,13 +18,12 @@ type Response struct {
 	Err error
 }
 
-func query(url string, i int, c chan Response) {
+func query(url string, i int, c chan Response) (*types.Receipt, error) {
 	rpcClient, err := rpc.DialHTTP(url)
 
 	if err != nil {
-		log.Printf("[%d] Failed to create a RPC client: %v", i, err)
 		c <- Response{i, err}
-
+		return nil, err
 	}
 
 	client := ethclient.NewClient(rpcClient)
@@ -31,15 +31,15 @@ func query(url string, i int, c chan Response) {
 	hash := "0x75d714f13cad3b57aa240ae1f3a2a91873c994b622e582a7e19a8757d157f299"
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(30*time.Second))
 	defer cancel()
-	_, err = client.TransactionReceipt(ctx, common.HexToHash(hash))
+	receipt, err := client.TransactionReceipt(ctx, common.HexToHash(hash))
 
 	if err != nil {
-		log.Printf("[%d] Failed to query : %v", i, err)
-		c <- Response{i, nil}
+		c <- Response{i, err}
+		return nil, err
 	}
 
-	// log.Printf("[%d] Response %v", i, transactionReceipt)
 	c <- Response{i, nil}
+	return receipt, nil
 }
 
 func main() {
@@ -50,23 +50,26 @@ func main() {
 	log.Printf("Using %s\n", url)
 
 	c := make(chan Response)
-	count := 100000
+	request_n := 100000
+	count := request_n
 	concurrency := 100
-	active := 0
+	active_n := 0
+	errors_n := 0
 
 	for {
-		if active < concurrency && count > 0 {
+		if active_n < concurrency && count > 0 {
 			go query(url, count, c)
 			count -= 1
-			active += 1
-		} else if active > 0 {
+			active_n += 1
+		} else if active_n > 0 {
 			response := <-c
 			if response.Err != nil {
-				log.Printf("[%d] %v", response.I, response.Err)
+				errors_n += 1
+				log.Printf("[%d] Error: %s; active: %d\n", response.I, response.Err, active_n)
 			}
-			active -= 1
+			active_n -= 1
 		} else {
-			log.Printf("Request finished")
+			log.Printf("%d/%d failed\n", errors_n, request_n)
 			break
 		}
 	}
