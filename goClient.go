@@ -45,6 +45,8 @@ func goTransactionReceipt(endpoint string, hash common.Hash, context context.Con
 		return nil, err
 	}
 
+	defer res.Body.Close()
+
 	result := Result{}
 
 	data, err := ioutil.ReadAll(res.Body)
