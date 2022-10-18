@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -45,7 +44,6 @@ func goTransactionReceipt(endpoint string, hash common.Hash, context context.Con
 
 	err = json.Unmarshal(data, &result)
 	if err != nil {
-		log.Printf("Failed to unmarshal \"%s\": %v", data, err)
 		return nil, err
 	}
 	return &result.Result, nil
