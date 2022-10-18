@@ -6,18 +6,28 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
+type Result struct {
+	Id      int64         `json:"id,omitempty"`
+	Jsonrpc string        `json:"jsonrpc,omitempty"`
+	Result  types.Receipt `json:"result" `
+}
+
 func goTransactionReceipt(endpoint string, hash common.Hash, context context.Context) (*types.Receipt, error) {
-	body := []byte(fmt.Sprintf("{\"jsonrpc\":\"2.0\",\"method\":\"eth_getTransactionreceipt\",\"params\":[\"%s\"],\"id\":0}", hash.String()))
+	body := []byte(fmt.Sprintf("{\"jsonrpc\":\"2.0\",\"method\":\"eth_getTransactionReceipt\",\"params\":[\"%s\"],\"id\":0}", hash.String()))
+
 	req, err := http.NewRequestWithContext(context, "POST", endpoint, bytes.NewBuffer(body))
 	if err != nil {
 		return nil, err
 	}
+
+	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
 
@@ -26,16 +36,17 @@ func goTransactionReceipt(endpoint string, hash common.Hash, context context.Con
 		return nil, err
 	}
 
-	receipt := types.Receipt{}
+	result := Result{}
 
 	data, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		return nil, err
 	}
 
-	err = json.Unmarshal(data, receipt)
+	err = json.Unmarshal(data, &result)
 	if err != nil {
+		log.Printf("Failed to unmarshal \"%s\": %v", data, err)
 		return nil, err
 	}
-	return &receipt, nil
+	return &result.Result, nil
 }
