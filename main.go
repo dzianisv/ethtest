@@ -9,8 +9,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/ethereum/go-ethereum/rpc"
 )
 
 type Response struct {
@@ -20,23 +18,12 @@ type Response struct {
 }
 
 func query(url string, i int, c chan Response) (*types.Receipt, error) {
-	rpcClient, err := rpc.DialHTTP(url)
-
-	if err != nil {
-		c <- Response{i, err, 0}
-		return nil, err
-	}
-
-	userAgent := fmt.Sprintf("ethtest %d %s", i, time.Now().Format(time.RFC3339))
-	rpcClient.SetHeader("User-Agent", userAgent)
-
-	client := ethclient.NewClient(rpcClient)
-
 	hash := "0x75d714f13cad3b57aa240ae1f3a2a91873c994b622e582a7e19a8757d157f299"
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(30*time.Second))
 	defer cancel()
+
 	start_t := time.Now()
-	receipt, err := client.TransactionReceipt(ctx, common.HexToHash(hash))
+	receipt, err := goTransactionReceipt(url, common.HexToHash(hash), ctx)
 	delay_ms := time.Now().UnixMilli() - start_t.UnixMilli()
 
 	if err != nil {
