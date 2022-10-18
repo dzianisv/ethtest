@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -28,7 +29,13 @@ func goTransactionReceipt(endpoint string, hash common.Hash, context context.Con
 
 	req.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{}
+	var netTransport = http.DefaultTransport.(*http.Transport).Clone()
+	netTransport.TLSNextProto = map[string]func(string, *tls.Conn) http.RoundTripper{}
+	netTransport.ForceAttemptHTTP2 = false
+
+	client := &http.Client{
+		Transport: netTransport,
+	}
 
 	res, err := client.Do(req)
 	if err != nil {
