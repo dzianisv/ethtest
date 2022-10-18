@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -29,16 +30,18 @@ func goTransactionReceipt(endpoint string, hash common.Hash, context context.Con
 
 	req.Header.Set("Content-Type", "application/json")
 
-	var netTransport = http.DefaultTransport.(*http.Transport).Clone()
-	netTransport.TLSNextProto = map[string]func(string, *tls.Conn) http.RoundTripper{}
-	netTransport.ForceAttemptHTTP2 = false
+	transport := &http.Transport{
+		TLSClientConfig: &tls.Config{},
+		TLSNextProto:    make(map[string]func(authority string, c *tls.Conn) http.RoundTripper), // Disable HTTP/2
+	}
 
 	client := &http.Client{
-		Transport: netTransport,
+		Transport: transport,
 	}
 
 	res, err := client.Do(req)
 	if err != nil {
+		log.Printf("Request failed: %s", err)
 		return nil, err
 	}
 
@@ -46,11 +49,13 @@ func goTransactionReceipt(endpoint string, hash common.Hash, context context.Con
 
 	data, err := ioutil.ReadAll(res.Body)
 	if err != nil {
+		log.Printf("Failed to read response body: %s", err)
 		return nil, err
 	}
 
 	err = json.Unmarshal(data, &result)
 	if err != nil {
+		log.Printf("Failed to parse body \"%s\": %s", body, err)
 		return nil, err
 	}
 	return &result.Result, nil
