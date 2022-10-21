@@ -78,6 +78,7 @@ func goClientVersion(endpoint string, context context.Context, disableHttp2 bool
 	}
 
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("User-Agent", "ethtest")
 
 	var transport *http.Transport
 
