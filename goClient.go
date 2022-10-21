@@ -20,7 +20,7 @@ type Result struct {
 	Result  types.Receipt `json:"result" `
 }
 
-func goTransactionReceipt(endpoint string, hash common.Hash, context context.Context) (*types.Receipt, error) {
+func goTransactionReceipt(endpoint string, hash common.Hash, context context.Context, disableHttp2 bool) (*types.Receipt, error) {
 	body := []byte(fmt.Sprintf("{\"jsonrpc\":\"2.0\",\"method\":\"eth_getTransactionReceipt\",\"params\":[\"%s\"],\"id\":0}", hash.String()))
 
 	req, err := http.NewRequestWithContext(context, "POST", endpoint, bytes.NewBuffer(body))
@@ -30,9 +30,15 @@ func goTransactionReceipt(endpoint string, hash common.Hash, context context.Con
 
 	req.Header.Set("Content-Type", "application/json")
 
-	transport := &http.Transport{
-		TLSClientConfig: &tls.Config{},
-		TLSNextProto:    make(map[string]func(authority string, c *tls.Conn) http.RoundTripper), // Disable HTTP/2
+	var transport *http.Transport
+
+	if disableHttp2 {
+		transport = &http.Transport{
+			TLSClientConfig: &tls.Config{},
+			TLSNextProto:    make(map[string]func(authority string, c *tls.Conn) http.RoundTripper), // Disable HTTP/2
+		}
+	} else {
+		transport = http.DefaultTransport.(*http.Transport)
 	}
 
 	client := &http.Client{
@@ -61,4 +67,53 @@ func goTransactionReceipt(endpoint string, hash common.Hash, context context.Con
 		return nil, err
 	}
 	return &result.Result, nil
+}
+
+func goClientVersion(endpoint string, context context.Context, disableHttp2 bool) (string, error) {
+	body := []byte(fmt.Sprintf("{\"jsonrpc\":\"2.0\",\"method\":\"web3_clientVersion\",\"params\":[],\"id\":0}"))
+
+	req, err := http.NewRequestWithContext(context, "POST", endpoint, bytes.NewBuffer(body))
+	if err != nil {
+		return "", err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	var transport *http.Transport
+
+	if disableHttp2 {
+		transport = &http.Transport{
+			TLSClientConfig: &tls.Config{},
+			TLSNextProto:    make(map[string]func(authority string, c *tls.Conn) http.RoundTripper), // Disable HTTP/2
+		}
+	} else {
+		transport = http.DefaultTransport.(*http.Transport)
+	}
+
+	client := &http.Client{
+		Transport: transport,
+	}
+
+	res, err := client.Do(req)
+	if err != nil {
+		log.Printf("Request failed: %s", err)
+		return "", err
+	}
+
+	defer res.Body.Close()
+
+	data, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		log.Printf("Failed to read response body: %s", err)
+		return "", err
+	}
+
+	result := make(map[string]interface{})
+
+	err = json.Unmarshal(data, &result)
+	if err != nil {
+		log.Printf("Failed to parse body \"%s\": %s", body, err)
+		return "", err
+	}
+	return result["result"].(string), nil
 }

@@ -2,13 +2,11 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"log"
 	"os"
 	"time"
-
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 )
 
 type Response struct {
@@ -17,22 +15,23 @@ type Response struct {
 	DelayMili int64
 }
 
-func query(url string, i int, c chan Response) (*types.Receipt, error) {
-	hash := "0x75d714f13cad3b57aa240ae1f3a2a91873c994b622e582a7e19a8757d157f299"
+func query(url string, i int, c chan Response, disableHttp2 bool) {
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(30*time.Second))
 	defer cancel()
 
 	start_t := time.Now()
-	receipt, err := goTransactionReceipt(url, common.HexToHash(hash), ctx)
+	// receipt, err := goTransactionReceipt(url, common.HexToHash("0x75d714f13cad3b57aa240ae1f3a2a91873c994b622e582a7e19a8757d157f299"), ctx, disableHttp2)
+	version, err := goClientVersion(url, ctx, disableHttp2)
+	log.Printf("Version: %s", version)
 	delay_ms := time.Now().UnixMilli() - start_t.UnixMilli()
 
 	if err != nil {
 		c <- Response{i, err, delay_ms}
-		return nil, err
+		return
 	}
 
 	c <- Response{i, nil, delay_ms}
-	return receipt, nil
+	return
 }
 
 func Max(x, y int64) int64 {
@@ -47,12 +46,20 @@ func main() {
 	password := os.Getenv("PASSWORD")
 	host := os.Getenv("HOST")
 	url := fmt.Sprintf("https://%s:%s@%s", name, password, host)
+
+	requestFlag := flag.Int("n", 1000, "number of requests")
+	concurrencyFlag := flag.Int("c", 100, "number of concurrent requetss")
+	disableHttp2Flag := flag.Bool("http1", false, "disable http/2")
+
+	flag.Parse()
+
+	concurrency := *concurrencyFlag
+	request_n := *requestFlag
+
 	log.Printf("Using %s\n", url)
 
 	c := make(chan Response)
-	request_n := 100000
 	count := request_n
-	concurrency := 100
 	active_n := 0
 	errors_n := 0
 	latency := make([]int64, request_n)
@@ -61,7 +68,7 @@ func main() {
 		if active_n < concurrency && count > 0 {
 			count -= 1
 			active_n += 1
-			go query(url, count, c)
+			go query(url, count, c, *disableHttp2Flag)
 		} else if active_n > 0 {
 			response := <-c
 			latency[response.I] = response.DelayMili
