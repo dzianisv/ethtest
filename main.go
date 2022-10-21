@@ -102,7 +102,7 @@ func main() {
 
 			if response.Err != nil {
 				errors_n += 1
-				log.Printf("[%d] Error: %s; active: %d\n", response.I, response.Err, active_n)
+				log.Printf("[%d] Error: %s", response.I, response.Err)
 			}
 			active_n -= 1
 		} else {
