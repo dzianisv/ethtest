@@ -57,6 +57,9 @@ func main() {
 	request_n := *requestFlag
 
 	log.Printf("Using %s\n", url)
+	if *disableHttp2Flag {
+		log.Printf("Disable http/2")
+	}
 
 	c := make(chan Response)
 	count := request_n
