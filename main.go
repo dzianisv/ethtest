@@ -7,6 +7,8 @@ import (
 	"log"
 	"os"
 	"time"
+
+	"github.com/ethereum/go-ethereum/common"
 )
 
 type Response struct {
@@ -15,14 +17,19 @@ type Response struct {
 	DelayMili int64
 }
 
-func query(url string, i int, c chan Response, disableHttp2 bool) {
+func query(url string, i int, c chan Response, disableHttp2 bool, apiMethod string) {
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(30*time.Second))
 	defer cancel()
 
 	start_t := time.Now()
-	// receipt, err := goTransactionReceipt(url, common.HexToHash("0x75d714f13cad3b57aa240ae1f3a2a91873c994b622e582a7e19a8757d157f299"), ctx, disableHttp2)
-	version, err := goClientVersion(url, ctx, disableHttp2)
-	log.Printf("Version: %s", version)
+	var err error = nil
+
+	if apiMethod == "web3_clientVersion" {
+		_, err = goClientVersion(url, ctx, disableHttp2)
+	} else if apiMethod == "eth_transactionReceipt" {
+		_, err = goTransactionReceipt(url, common.HexToHash("0x75d714f13cad3b57aa240ae1f3a2a91873c994b622e582a7e19a8757d157f299"), ctx, disableHttp2)
+	}
+
 	delay_ms := time.Now().UnixMilli() - start_t.UnixMilli()
 
 	if err != nil {
@@ -41,6 +48,18 @@ func Max(x, y int64) int64 {
 	return x
 }
 
+var validMethods = []string{"web3_clientVersion", "eth_transactionReceipt"}
+
+func isSupportedMethod(method string) bool {
+	for _, m := range validMethods {
+		if m == method {
+			return true
+		}
+	}
+
+	return false
+}
+
 func main() {
 	name := os.Getenv("NAME")
 	password := os.Getenv("PASSWORD")
@@ -50,8 +69,13 @@ func main() {
 	requestFlag := flag.Int("n", 1000, "number of requests")
 	concurrencyFlag := flag.Int("c", 100, "number of concurrent requetss")
 	disableHttp2Flag := flag.Bool("http1", false, "disable http/2")
+	apiMethodFlag := flag.String("m", "web3_clientVersion", "JSON-RPC method")
 
 	flag.Parse()
+
+	if !isSupportedMethod(*apiMethodFlag) {
+		log.Fatalf("Invalid JSON-RPC method: %s", *apiMethodFlag)
+	}
 
 	concurrency := *concurrencyFlag
 	request_n := *requestFlag
@@ -71,7 +95,7 @@ func main() {
 		if active_n < concurrency && count > 0 {
 			count -= 1
 			active_n += 1
-			go query(url, count, c, *disableHttp2Flag)
+			go query(url, count, c, *disableHttp2Flag, *apiMethodFlag)
 		} else if active_n > 0 {
 			response := <-c
 			latency[response.I] = response.DelayMili
