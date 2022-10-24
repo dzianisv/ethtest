@@ -85,6 +85,7 @@ func main() {
 	disableHttp2Flag := flag.Bool("http1", false, "disable http/2")
 	apiMethodFlag := flag.String("m", "web3_clientVersion", "JSON-RPC method: <web3_clientVersion, eth_transactionReceip>")
 	clientTypeFlag := flag.String("client-type", "http", "Client type: <http, ethclient>")
+	timeoutFlag := flag.Int("t", 5, "request timeout")
 
 	flag.Parse()
 
