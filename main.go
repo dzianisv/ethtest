@@ -25,7 +25,7 @@ type Response struct {
 }
 
 func query(ApiProvider ApiProvider, url string, i int, c chan Response, timeout int, apiMethod string) {
-	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(timeout*time.Second))
+	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Duration(timeout)*time.Second))
 	defer cancel()
 
 	start_t := time.Now()
