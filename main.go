@@ -24,8 +24,8 @@ type Response struct {
 	DelayMili int64
 }
 
-func query(ApiProvider ApiProvider, url string, i int, c chan Response, apiMethod string) {
-	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(30*time.Second))
+func query(ApiProvider ApiProvider, url string, i int, c chan Response, timeout int, apiMethod string) {
+	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(timeout*time.Second))
 	defer cancel()
 
 	start_t := time.Now()
@@ -126,7 +126,7 @@ func main() {
 		if active_n < concurrency && count > 0 {
 			count -= 1
 			active_n += 1
-			go query(apiProvider, url, count, c, *apiMethodFlag)
+			go query(apiProvider, url, count, c, *timeoutFlag, *apiMethodFlag)
 		} else if active_n > 0 {
 			response := <-c
 			latency[response.I] = response.DelayMili
