@@ -19,27 +19,12 @@ type Response struct {
 	DelayMili int64
 }
 
-func query(url string, i int, c chan Response, disableHttp2 bool, apiMethod string) {
+func query(client *http.Client, url string, i int, c chan Response, apiMethod string) {
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(30*time.Second))
 	defer cancel()
 
 	start_t := time.Now()
 	var err error = nil
-
-	var transport *http.Transport
-
-	if disableHttp2 {
-		transport = &http.Transport{
-			TLSClientConfig: &tls.Config{},
-			TLSNextProto:    make(map[string]func(authority string, c *tls.Conn) http.RoundTripper), // Disable HTTP/2
-		}
-	} else {
-		transport = http.DefaultTransport.(*http.Transport)
-	}
-
-	client := &http.Client{
-		Transport: transport,
-	}
 
 	if apiMethod == "web3_clientVersion" {
 		_, err = goClientVersion(client, url, ctx)
@@ -108,11 +93,26 @@ func main() {
 	errors_n := 0
 	latency := make([]int64, request_n)
 
+	var transport *http.Transport
+
+	if *disableHttp2Flag {
+		transport = &http.Transport{
+			TLSClientConfig: &tls.Config{},
+			TLSNextProto:    make(map[string]func(authority string, c *tls.Conn) http.RoundTripper), // Disable HTTP/2
+		}
+	} else {
+		transport = http.DefaultTransport.(*http.Transport)
+	}
+
+	client := &http.Client{
+		Transport: transport,
+	}
+
 	for {
 		if active_n < concurrency && count > 0 {
 			count -= 1
 			active_n += 1
-			go query(url, count, c, *disableHttp2Flag, *apiMethodFlag)
+			go query(client, url, count, c, *apiMethodFlag)
 		} else if active_n > 0 {
 			response := <-c
 			latency[response.I] = response.DelayMili
