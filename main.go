@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"flag"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"time"
 
@@ -24,10 +26,25 @@ func query(url string, i int, c chan Response, disableHttp2 bool, apiMethod stri
 	start_t := time.Now()
 	var err error = nil
 
+	var transport *http.Transport
+
+	if disableHttp2 {
+		transport = &http.Transport{
+			TLSClientConfig: &tls.Config{},
+			TLSNextProto:    make(map[string]func(authority string, c *tls.Conn) http.RoundTripper), // Disable HTTP/2
+		}
+	} else {
+		transport = http.DefaultTransport.(*http.Transport)
+	}
+
+	client := &http.Client{
+		Transport: transport,
+	}
+
 	if apiMethod == "web3_clientVersion" {
-		_, err = goClientVersion(url, ctx, disableHttp2)
+		_, err = goClientVersion(client, url, ctx)
 	} else if apiMethod == "eth_transactionReceipt" {
-		_, err = goTransactionReceipt(url, common.HexToHash("0x75d714f13cad3b57aa240ae1f3a2a91873c994b622e582a7e19a8757d157f299"), ctx, disableHttp2)
+		_, err = goTransactionReceipt(client, url, common.HexToHash("0x75d714f13cad3b57aa240ae1f3a2a91873c994b622e582a7e19a8757d157f299"), ctx)
 	}
 
 	delay_ms := time.Now().UnixMilli() - start_t.UnixMilli()
