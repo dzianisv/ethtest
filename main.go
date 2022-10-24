@@ -2,16 +2,21 @@ package main
 
 import (
 	"context"
-	"crypto/tls"
 	"flag"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethclient"
 )
+
+type ApiProvider interface {
+	web3_clientVersion(context.Context) (string, error)
+	eth_transactionReceipt(context.Context, common.Hash) (*types.Receipt, error)
+}
 
 type Response struct {
 	I         int
@@ -19,7 +24,7 @@ type Response struct {
 	DelayMili int64
 }
 
-func query(client *http.Client, url string, i int, c chan Response, apiMethod string) {
+func query(ApiProvider ApiProvider, url string, i int, c chan Response, apiMethod string) {
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(30*time.Second))
 	defer cancel()
 
@@ -27,9 +32,9 @@ func query(client *http.Client, url string, i int, c chan Response, apiMethod st
 	var err error = nil
 
 	if apiMethod == "web3_clientVersion" {
-		_, err = goClientVersion(client, url, ctx)
+		_, err = ApiProvider.web3_clientVersion(ctx)
 	} else if apiMethod == "eth_transactionReceipt" {
-		_, err = goTransactionReceipt(client, url, common.HexToHash("0x75d714f13cad3b57aa240ae1f3a2a91873c994b622e582a7e19a8757d157f299"), ctx)
+		_, err = ApiProvider.eth_transactionReceipt(ctx, common.HexToHash("0x75d714f13cad3b57aa240ae1f3a2a91873c994b622e582a7e19a8757d157f299"))
 	}
 
 	delay_ms := time.Now().UnixMilli() - start_t.UnixMilli()
@@ -40,7 +45,14 @@ func query(client *http.Client, url string, i int, c chan Response, apiMethod st
 	}
 
 	c <- Response{i, nil, delay_ms}
-	return
+}
+
+func ethclientTest() {
+
+}
+
+func queryEthclient(client *ethclient.Client, i int, feedback chan Response, apiMethod string) {
+
 }
 
 func Max(x, y int64) int64 {
@@ -71,7 +83,8 @@ func main() {
 	requestFlag := flag.Int("n", 1000, "number of requests")
 	concurrencyFlag := flag.Int("c", 100, "number of concurrent requetss")
 	disableHttp2Flag := flag.Bool("http1", false, "disable http/2")
-	apiMethodFlag := flag.String("m", "web3_clientVersion", "JSON-RPC method")
+	apiMethodFlag := flag.String("m", "web3_clientVersion", "JSON-RPC method: <web3_clientVersion, eth_transactionReceip>")
+	clientTypeFlag := flag.String("client-type", "http", "Client type: <http, ethclient>")
 
 	flag.Parse()
 
@@ -93,26 +106,26 @@ func main() {
 	errors_n := 0
 	latency := make([]int64, request_n)
 
-	var transport *http.Transport
+	var apiProvider ApiProvider
+	var err error
 
-	if *disableHttp2Flag {
-		transport = &http.Transport{
-			TLSClientConfig: &tls.Config{},
-			TLSNextProto:    make(map[string]func(authority string, c *tls.Conn) http.RoundTripper), // Disable HTTP/2
-		}
+	if *clientTypeFlag == "http" {
+		apiProvider, err = NewHttpApiProvider(url, *disableHttp2Flag)
+	} else if *clientTypeFlag == "ethclient" {
+		apiProvider, err = NewEthcelintApiProvider(url)
 	} else {
-		transport = http.DefaultTransport.(*http.Transport)
+		log.Fatalf("Invalid Api Provier: %s", *clientTypeFlag)
 	}
 
-	client := &http.Client{
-		Transport: transport,
+	if err != nil {
+		log.Fatal("Failed to create an API provier: %s", err)
 	}
 
 	for {
 		if active_n < concurrency && count > 0 {
 			count -= 1
 			active_n += 1
-			go query(client, url, count, c, *apiMethodFlag)
+			go query(apiProvider, url, count, c, *apiMethodFlag)
 		} else if active_n > 0 {
 			response := <-c
 			latency[response.I] = response.DelayMili
