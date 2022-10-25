@@ -130,7 +130,7 @@ func percentileBreakdown(data []int64) ([]BreakdownEntry, int64, int64) {
 	divider := max_entry / int64(len(breakdowns))
 
 	for _, item := range data {
-		breakdowns[item%divider].count++
+		breakdowns[Max(item%divider, int64(len(breakdowns)))].count++
 	}
 
 	for i, breakdownEntry := range breakdowns {
@@ -211,7 +211,7 @@ func main() {
 	latencyBreakdowns, max_latency, avg_latency := percentileBreakdown(latency)
 
 	for _, breakdownEntry := range latencyBreakdowns {
-		log.Printf("<%d: %d %f%%", breakdownEntry.lessThan, breakdownEntry.count, breakdownEntry.percenntage)
+		log.Printf("<%d ms: %d/%d %f%%", breakdownEntry.lessThan, breakdownEntry.count, len(latency), breakdownEntry.percenntage)
 	}
 
 	log.Printf("Max delay %d ms", max_latency)
