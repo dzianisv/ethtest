@@ -108,6 +108,39 @@ func isSupportedMethod(method string) bool {
 	return false
 }
 
+type BreakdownEntry struct {
+	lessThan    int64
+	count       int
+	percenntage float32
+}
+
+func percentileBreakdown(data []int64) ([]BreakdownEntry, int64, int64) {
+	max_entry := data[0]
+	sum_ms := int64(0)
+
+	breakdowns := make([]BreakdownEntry, 10)
+
+	for i, entry := range data {
+		max_entry = Max(max_entry, entry)
+		sum_ms += entry
+		log.Printf("%d\t%d\n", i, max_entry)
+	}
+
+	avg_ms := sum_ms / int64(len(data))
+	divider := max_entry / int64(len(breakdowns))
+
+	for _, item := range data {
+		breakdowns[item%divider].count++
+	}
+
+	for i, breakdownEntry := range breakdowns {
+		breakdownEntry.lessThan = (int64(i) + 1) * divider
+		breakdownEntry.percenntage = float32(breakdownEntry.count) * 100 / float32(len(data))
+	}
+
+	return breakdowns, max_entry, avg_ms
+}
+
 func main() {
 	name := os.Getenv("NAME")
 	password := os.Getenv("PASSWORD")
@@ -175,17 +208,13 @@ func main() {
 		}
 	}
 
-	max_delay_ms := latency[0]
-	sum_ms := int64(0)
+	latencyBreakdowns, max_latency, avg_latency := percentileBreakdown(latency)
 
-	for i, delay_ms := range latency {
-		max_delay_ms = Max(delay_ms, max_delay_ms)
-		sum_ms += delay_ms
-		log.Printf("%d\t%d\n", i, delay_ms)
+	for _, breakdownEntry := range latencyBreakdowns {
+		log.Printf("<%d: %d %f%%", breakdownEntry.lessThan, breakdownEntry.count, breakdownEntry.percenntage)
 	}
 
-	avg_ms := sum_ms / int64(request_n)
-	log.Printf("Max delay %d ms", max_delay_ms)
-	log.Printf("Average delay %d ms", avg_ms)
+	log.Printf("Max delay %d ms", max_latency)
+	log.Printf("Average delay %d ms", avg_latency)
 	log.Printf("%d/%d failed\n", errors_n, request_n)
 }
