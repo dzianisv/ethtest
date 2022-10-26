@@ -1,5 +1,3 @@
 #!/bin/bash
-set -euo pipefail
 # apt install -yq nghttp2-client
-BASE64_USER_PASSWORD=$(echo -n "$NAME:$PASSWORD" | base64)
-exec h2load -n 1000000 -c 100 -H "Content-Type: application/json" -H 'User-Agent: h2load'  -H "Authorization: Basic $BASE64_USER_PASSWORD" --data data.json "https://$HOST/"
+exec h2load -n 1000000 -c 100 -H "Content-Type: application/json" -H 'User-Agent: h2load'  -H "Authorization: Basic $(echo -n $NAME:$PASSWORD | base64)" --data data.json "https://$HOST/"
