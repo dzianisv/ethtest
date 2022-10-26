@@ -135,7 +135,7 @@ func percentileBreakdown(data []int64) ([]BreakdownEntry, int64, int64) {
 	divider := int64(0)
 
 	breakdowns_n := int64(10)
-	for divider == 0 && divider > 0 {
+	for divider == 0 && breakdowns_n > 0 {
 		divider = max_entry / breakdowns_n
 		breakdowns_n -= 1
 	}
