@@ -138,8 +138,6 @@ func percentileBreakdown(data []int64) ([]BreakdownEntry, int64, int64) {
 
 	breakdowns := make([]BreakdownEntry, breakdowns_n+1)
 
-	log.Printf("Max entry: %v, Divider: %d, breakdowns: %d", max_entry, divider, len(breakdowns))
-
 	for _, item := range data {
 		breakdowns[Min(item%divider, int64(len(breakdowns)-1))].count++
 	}
