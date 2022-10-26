@@ -10,7 +10,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethclient"
 )
 
 type ApiProvider interface {
@@ -79,14 +78,6 @@ func query(ApiProvider ApiProvider, url string, i int, c chan Response, timeout 
 	}
 
 	c <- Response{i, nil, delay_ms}
-}
-
-func ethclientTest() {
-
-}
-
-func queryEthclient(client *ethclient.Client, i int, feedback chan Response, apiMethod string) {
-
 }
 
 func Max(x, y int64) int64 {
@@ -231,7 +222,7 @@ func main() {
 	latencyBreakdowns, max_latency, avg_latency := percentileBreakdown(latency)
 
 	for _, breakdownEntry := range latencyBreakdowns {
-		log.Printf("<%d ms: %d/%d %f%%", breakdownEntry.lessThan, breakdownEntry.count, len(latency), breakdownEntry.percenntage)
+		log.Printf("<= %d ms: %d/%d %f%%", breakdownEntry.lessThan, breakdownEntry.count, len(latency), breakdownEntry.percenntage)
 	}
 
 	log.Printf("Max delay %d ms", max_latency)
