@@ -96,6 +96,13 @@ func Max(x, y int64) int64 {
 	return x
 }
 
+func Min(x, y int64) int64 {
+	if x > y {
+		return y
+	}
+	return x
+}
+
 var validMethods = []string{"web3_clientVersion", "eth_transactionReceipt"}
 
 func isSupportedMethod(method string) bool {
@@ -143,7 +150,7 @@ func percentileBreakdown(data []int64) ([]BreakdownEntry, int64, int64) {
 	log.Printf("Max entry: %v, Divider: %d, breakdowns: %d", max_entry, divider, len(breakdowns))
 
 	for _, item := range data {
-		breakdowns[Max(item%divider, int64(len(breakdowns)))].count++
+		breakdowns[Min(item%divider, int64(len(breakdowns)-1))].count++
 	}
 
 	for i, breakdownEntry := range breakdowns {
