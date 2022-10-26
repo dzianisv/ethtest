@@ -144,7 +144,7 @@ func percentileBreakdown(data []int64) ([]BreakdownEntry, int64, int64) {
 	}
 
 	for i, breakdownEntry := range breakdowns {
-		breakdowns[i].lessThan = (int64(i)+1)*divider + divider
+		breakdowns[i].lessThan = (int64(i) + 1) * divider
 		breakdowns[i].percenntage = float32(breakdownEntry.count) * 100 / float32(len(data))
 	}
 
