@@ -123,11 +123,13 @@ func percentileBreakdown(data []int64) ([]BreakdownEntry, int64, int64) {
 	for i, entry := range data {
 		max_entry = Max(max_entry, entry)
 		sum_ms += entry
-		log.Printf("%d\t%d\n", i, max_entry)
+		log.Printf("%d\t%d\n", i, entry)
 	}
 
 	avg_ms := sum_ms / int64(len(data))
 	divider := max_entry / int64(len(breakdowns))
+
+	log.Printf("Max entry: %v, Divider: %d, breakdowns: %d", max_entry, divider, len(breakdowns))
 
 	for _, item := range data {
 		breakdowns[Max(item%divider, int64(len(breakdowns)))].count++
