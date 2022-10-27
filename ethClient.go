@@ -22,8 +22,7 @@ func NewEthcelintApiProvider(endpoint string) (*EthclientApiProvider, error) {
 		return nil, err
 	}
 
-	// userAgent := fmt.Sprintf("ethtest %d %s", i, time.Now().Format(time.RFC3339))
-	// rpcClient.SetHeader("User-Agent", userAgent)
+	rpcClient.SetHeader("User-Agent", "ethtest")
 
 	client := ethclient.NewClient(rpcClient)
 
