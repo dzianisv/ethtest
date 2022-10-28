@@ -82,12 +82,13 @@ func main() {
 		}
 
 		body, err := io.ReadAll(res.Body)
+		defer res.Body.Close()
 		if err != nil {
-			res.Body.Close()
-			log.Printf(" %d error parsing the message: %s", n, err.Error())
+			errors_n += 1
+			log.Printf("failed to read a response: %s", err)
+			log.Printf("Erors: %d", errors_n)
 			continue
 		}
-		res.Body.Close()
 
 		jsonMap := make(map[string]interface{})
 		err = json.Unmarshal(body, &jsonMap)
