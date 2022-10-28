@@ -31,6 +31,8 @@ const (
 
 func main() {
 	timeoutFlag := flag.Int("t", 5, "timeout")
+	flag.Parse()
+
 	timeout := *timeoutFlag
 
 	transport := &http.Transport{
