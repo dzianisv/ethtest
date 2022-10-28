@@ -158,6 +158,7 @@ func CallJSONRPCMethod(c *http.Client) (res interface{}, err error) {
 	url := fmt.Sprintf("https://%s", host)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonBody))
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("User-Agent", "go/net/http/test")
 	req.Header.Set("Authorization", fmt.Sprintf("Basic %s", authorization))
 
 	resp, err := c.Do(req)
