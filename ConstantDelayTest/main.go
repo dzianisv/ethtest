@@ -57,6 +57,7 @@ func main() {
 	}
 
 	n := -1
+	errors_n := 0
 	for {
 		n++
 		time.Sleep(1 * time.Second)
@@ -74,7 +75,9 @@ func main() {
 
 		res, err := client.Do(req)
 		if err != nil {
-			fmt.Println(n, err)
+			errors_n += 1
+			fmt.Printf("Failed to query: %s", err)
+			fmt.Printf("Errors: %d", errors_n)
 			continue
 		}
 
@@ -89,10 +92,7 @@ func main() {
 		jsonMap := make(map[string]interface{})
 		err = json.Unmarshal(body, &jsonMap)
 		if err != nil {
-			continue
+			log.Printf("failed to decoded response: %s", err)
 		}
-		log.Println(n, jsonMap["result"])
-
-		continue
 	}
 }
