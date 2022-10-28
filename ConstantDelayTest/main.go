@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -21,7 +22,6 @@ const GetBlockByNumberJson = `
 	}`
 
 const (
-	timeout               = 30
 	keepAlive             = 30
 	maxIdleConns          = 1000
 	idleConnTimeout       = 60
@@ -29,20 +29,23 @@ const (
 	expectContinueTimeout = 1
 )
 
-var transport = &http.Transport{
-	Proxy: http.ProxyFromEnvironment,
-	DialContext: (&net.Dialer{
-		Timeout:   timeout * time.Second,
-		KeepAlive: keepAlive * time.Second,
-	}).DialContext,
-	ForceAttemptHTTP2:     true,
-	MaxIdleConns:          maxIdleConns,
-	IdleConnTimeout:       idleConnTimeout * time.Second,
-	TLSHandshakeTimeout:   TLSHandshakeTimeout * time.Second,
-	ExpectContinueTimeout: expectContinueTimeout * time.Second,
-}
-
 func main() {
+	timeoutFlag := flag.Int("t", 5, "timeout")
+	timeout := *timeoutFlag
+
+	transport := &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout:   time.Duration(timeout) * time.Second,
+			KeepAlive: keepAlive * time.Second,
+		}).DialContext,
+		ForceAttemptHTTP2:     true,
+		MaxIdleConns:          maxIdleConns,
+		IdleConnTimeout:       idleConnTimeout * time.Second,
+		TLSHandshakeTimeout:   TLSHandshakeTimeout * time.Second,
+		ExpectContinueTimeout: expectContinueTimeout * time.Second,
+	}
+
 	client := &http.Client{
 		Timeout:   time.Duration(timeout) * time.Second,
 		Transport: transport,
