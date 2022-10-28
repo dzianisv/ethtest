@@ -76,8 +76,8 @@ func main() {
 		res, err := client.Do(req)
 		if err != nil {
 			errors_n += 1
-			fmt.Printf("Failed to query: %s", err)
-			fmt.Printf("Errors: %d", errors_n)
+			fmt.Printf("Failed to query: %s\n", err)
+			fmt.Printf("Errors: %d\n", errors_n)
 			continue
 		}
 
@@ -85,15 +85,15 @@ func main() {
 		defer res.Body.Close()
 		if err != nil {
 			errors_n += 1
-			log.Printf("failed to read a response: %s", err)
-			log.Printf("Erors: %d", errors_n)
+			log.Printf("failed to read a response: %s\n", err)
+			log.Printf("erors: %d\n", errors_n)
 			continue
 		}
 
 		jsonMap := make(map[string]interface{})
 		err = json.Unmarshal(body, &jsonMap)
 		if err != nil {
-			log.Printf("failed to decoded response: %s", err)
+			log.Printf("failed to decoded response\n: %s", err)
 		}
 	}
 }
